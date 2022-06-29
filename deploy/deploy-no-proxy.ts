@@ -31,12 +31,16 @@ export default async function (hre: HardhatRuntimeEnvironment) {
   // For the simplicity of the tutorial, we will use zero hash as salt
   const salt = ethers.constants.HashZero;
   let tx = await factory.deployAccount(salt, owner1.address, owner2.address);
-  await tx.wait();
+  const receipt = await tx.wait();
+  const [{ deployedAddress }] = utils.getDeployedContracts(receipt);
 
   // Getting the address of the deployed contract
   const abiCoder = new ethers.utils.AbiCoder();
   const input = abiCoder.encode(["address", "address"], [owner1.address, owner2.address]);
   const multisigAddress = utils.create2Address(factory.address, bytecodeHash, salt, input);
+  if (multisigAddress !== deployedAddress) {
+    throw new Error(`deployedAddress ${deployedAddress} !== multisigAddress ${multisigAddress}`);
+  }
   console.log(`Multisig deployed on address ${multisigAddress}`);
 
   // Send funds to the contract
